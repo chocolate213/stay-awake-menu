@@ -1,0 +1,25 @@
+"app.name" = "Stay Awake";
+
+"menu.status.on" = "Status: On";
+"menu.status.off" = "Status: Off";
+"menu.toggle.on" = "Turn Stay Awake On";
+"menu.toggle.off" = "Turn Stay Awake Off";
+"menu.openScript" = "Reveal Installed Helper";
+"menu.about" = "About Stay Awake";
+"menu.quit" = "Quit";
+
+"tooltip.on" = "Stay Awake is on";
+"tooltip.off" = "Stay Awake is off";
+
+"notification.on" = "Stay Awake is on. This Mac will remain awake.";
+"notification.off" = "Stay Awake is off. This Mac can sleep or lock normally.";
+
+"alert.missingScript.title" = "Missing executable script";
+"alert.installHelper.title" = "Cannot install helper script";
+"alert.bundledHelperMissing.detail" = "The helper script is missing from the app bundle.";
+"alert.stateDir.title" = "Cannot create the state directory";
+"alert.pidFile.title" = "Cannot write the state file";
+"alert.startFailed.title" = "Cannot turn Stay Awake on";
+"alert.unknownError" = "Unknown error";
+
+"about.credits" = "A tiny native macOS menu bar app that installs a local helper script and controls the system caffeinate command.";

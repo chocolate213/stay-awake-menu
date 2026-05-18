@@ -1,0 +1,11 @@
+.DS_Store
+dist/
+build/
+release/
+references/
+*.zip
+*.sha256
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/

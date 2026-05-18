@@ -1,0 +1,25 @@
+"app.name" = "保持唤醒";
+
+"menu.status.on" = "状态：已开启";
+"menu.status.off" = "状态：已关闭";
+"menu.toggle.on" = "开启保持唤醒";
+"menu.toggle.off" = "关闭保持唤醒";
+"menu.openScript" = "显示已安装脚本";
+"menu.about" = "关于保持唤醒";
+"menu.quit" = "退出";
+
+"tooltip.on" = "保持唤醒已开启";
+"tooltip.off" = "保持唤醒已关闭";
+
+"notification.on" = "已开启，Mac 会保持唤醒。";
+"notification.off" = "已关闭，Mac 将恢复正常休眠/锁屏。";
+
+"alert.missingScript.title" = "找不到可执行脚本";
+"alert.installHelper.title" = "无法安装辅助脚本";
+"alert.bundledHelperMissing.detail" = "App bundle 中缺少辅助脚本。";
+"alert.stateDir.title" = "无法创建状态目录";
+"alert.pidFile.title" = "无法写入状态文件";
+"alert.startFailed.title" = "开启失败";
+"alert.unknownError" = "未知错误";
+
+"about.credits" = "原生 macOS 菜单栏小工具，会安装本地辅助脚本并控制系统 caffeinate 命令。";

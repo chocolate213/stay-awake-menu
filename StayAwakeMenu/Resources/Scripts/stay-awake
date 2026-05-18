@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly PROGRAM_NAME="stay-awake"
+readonly VERSION="1.0.0"
+
+usage() {
+  cat <<'USAGE'
+stay-awake 1.0.0
+
+Usage:
+  stay-awake [OPTIONS] [DURATION]
+  stay-awake [OPTIONS] -t DURATION
+
+Prevent macOS from becoming idle long enough to start the screen saver or lock.
+It uses the system caffeinate command and does not change macOS settings.
+
+Options:
+  -t, --time DURATION       Keep the Mac awake for DURATION
+  -q, --quiet               Do not print status messages
+  -h, --help                Show this help text
+  -V, --version             Show version information
+
+Duration formats:
+  45m
+  2h
+  1h30m
+  3600
+  01:30:00
+  90:00
+
+With no duration, stay-awake runs until interrupted.
+USAGE
+}
+
+die() {
+  printf '%s: %s\n' "$PROGRAM_NAME" "$*" >&2
+  printf "Try '%s --help' for usage.\n" "$PROGRAM_NAME" >&2
+  exit 1
+}
+
+version() {
+  printf '%s %s\n' "$PROGRAM_NAME" "$VERSION"
+}
+
+parse_duration() {
+  local input="$1"
+  local total=0
+
+  if [[ "$input" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$input"
+    return
+  fi
+
+  if [[ "$input" =~ ^([0-9]+):([0-9]{1,2}):([0-9]{1,2})$ ]]; then
+    printf '%s\n' "$((10#${BASH_REMATCH[1]} * 3600 + 10#${BASH_REMATCH[2]} * 60 + 10#${BASH_REMATCH[3]}))"
+    return
+  fi
+
+  if [[ "$input" =~ ^([0-9]+):([0-9]{1,2})$ ]]; then
+    printf '%s\n' "$((10#${BASH_REMATCH[1]} * 60 + 10#${BASH_REMATCH[2]}))"
+    return
+  fi
+
+  local rest="$input"
+  local matched=0
+  while [[ "$rest" =~ ^([0-9]+)([sSmMhHdD])(.*)$ ]]; do
+    matched=1
+    local value="${BASH_REMATCH[1]}"
+    local unit="${BASH_REMATCH[2]}"
+    rest="${BASH_REMATCH[3]}"
+
+    case "$unit" in
+      s|S) total=$((total + value)) ;;
+      m|M) total=$((total + value * 60)) ;;
+      h|H) total=$((total + value * 3600)) ;;
+      d|D) total=$((total + value * 86400)) ;;
+    esac
+  done
+
+  if [[ "$matched" -eq 1 && -z "$rest" ]]; then
+    printf '%s\n' "$total"
+    return
+  fi
+
+  return 1
+}
+
+duration_arg=""
+quiet=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -V|--version)
+      version
+      exit 0
+      ;;
+    -q|--quiet)
+      quiet=1
+      shift
+      ;;
+    -t|--time|--duration)
+      [[ $# -ge 2 ]] || die "$1 needs a duration"
+      duration_arg="$2"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      [[ -z "$duration_arg" ]] || die "duration was provided more than once"
+      duration_arg="$1"
+      shift
+      ;;
+  esac
+done
+
+[[ $# -eq 0 ]] || die "unexpected argument: $1"
+
+caffeinate_bin="$(command -v caffeinate || true)"
+[[ -n "$caffeinate_bin" && -x "$caffeinate_bin" ]] || die "caffeinate was not found"
+
+if [[ -n "$duration_arg" ]]; then
+  seconds="$(parse_duration "$duration_arg")" || die "invalid duration: $duration_arg"
+  [[ "$seconds" -gt 0 ]] || die "duration must be greater than zero"
+  if [[ "$quiet" -eq 0 ]]; then
+    printf 'Preventing lock for %s seconds. Press Ctrl-C to stop early.\n' "$seconds"
+  fi
+  exec "$caffeinate_bin" -dimsu -t "$seconds"
+else
+  if [[ "$quiet" -eq 0 ]]; then
+    printf 'Preventing lock until interrupted. Press Ctrl-C to stop.\n'
+  fi
+  exec "$caffeinate_bin" -dimsu
+fi

@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly APP_ID="${STAY_AWAKE_APP_ID:-local.stay-awake.menu}"
+readonly SUPPORT_DIR="$HOME/Library/Application Support/$APP_ID"
+readonly STAY_AWAKE="$SUPPORT_DIR/Scripts/stay-awake"
+readonly STATE_DIR="$SUPPORT_DIR/State"
+readonly LOG_DIR="$SUPPORT_DIR/Logs"
+readonly PID_FILE="$STATE_DIR/caffeinate.pid"
+readonly LOG_FILE="$LOG_DIR/stay-awake.log"
+
+notify() {
+  osascript -e "display notification \"$1\" with title \"Stay Awake\"" >/dev/null 2>&1 || true
+}
+
+is_running() {
+  [[ -f "$PID_FILE" ]] || return 1
+
+  local pid
+  pid="$(<"$PID_FILE")"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  ps -p "$pid" -o comm= 2>/dev/null | grep -Eq '(^|/)caffeinate$'
+}
+
+mkdir -p "$STATE_DIR" "$LOG_DIR"
+
+if is_running; then
+  pid="$(<"$PID_FILE")"
+  kill "$pid" 2>/dev/null || true
+  rm -f "$PID_FILE"
+  notify "已关闭，Mac 将恢复正常休眠/锁屏。"
+  printf 'off\n'
+else
+  [[ -x "$STAY_AWAKE" ]] || {
+    printf 'Missing executable: %s\nLaunch Stay Awake.app once so it can install the helper script.\n' "$STAY_AWAKE" >&2
+    exit 1
+  }
+
+  nohup "$STAY_AWAKE" -q >"$LOG_FILE" 2>&1 &
+  printf '%s\n' "$!" >"$PID_FILE"
+  notify "已开启，Mac 会保持唤醒直到再次点击关闭。"
+  printf 'on\n'
+fi
