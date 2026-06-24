@@ -17,6 +17,7 @@ It uses the system caffeinate command and does not change macOS settings.
 
 Options:
   -t, --time DURATION       Keep the Mac awake for DURATION
+  -w, --watch-pid PID       Stop when PID exits
   -q, --quiet               Do not print status messages
   -h, --help                Show this help text
   -V, --version             Show version information
@@ -87,6 +88,7 @@ parse_duration() {
 }
 
 duration_arg=""
+watch_pid=""
 quiet=0
 
 while [[ $# -gt 0 ]]; do
@@ -106,6 +108,11 @@ while [[ $# -gt 0 ]]; do
     -t|--time|--duration)
       [[ $# -ge 2 ]] || die "$1 needs a duration"
       duration_arg="$2"
+      shift 2
+      ;;
+    -w|--watch-pid)
+      [[ $# -ge 2 ]] || die "$1 needs a PID"
+      watch_pid="$2"
       shift 2
       ;;
     --)
@@ -128,16 +135,25 @@ done
 caffeinate_bin="$(command -v caffeinate || true)"
 [[ -n "$caffeinate_bin" && -x "$caffeinate_bin" ]] || die "caffeinate was not found"
 
+if [[ -n "$watch_pid" ]]; then
+  [[ "$watch_pid" =~ ^[0-9]+$ && "$watch_pid" -gt 0 ]] || die "watch PID must be a positive integer"
+fi
+
+caffeinate_args=(-dimsu)
+if [[ -n "$watch_pid" ]]; then
+  caffeinate_args+=(-w "$watch_pid")
+fi
+
 if [[ -n "$duration_arg" ]]; then
   seconds="$(parse_duration "$duration_arg")" || die "invalid duration: $duration_arg"
   [[ "$seconds" -gt 0 ]] || die "duration must be greater than zero"
   if [[ "$quiet" -eq 0 ]]; then
     printf 'Preventing lock for %s seconds. Press Ctrl-C to stop early.\n' "$seconds"
   fi
-  exec "$caffeinate_bin" -dimsu -t "$seconds"
+  exec "$caffeinate_bin" "${caffeinate_args[@]}" -t "$seconds"
 else
   if [[ "$quiet" -eq 0 ]]; then
     printf 'Preventing lock until interrupted. Press Ctrl-C to stop.\n'
   fi
-  exec "$caffeinate_bin" -dimsu
+  exec "$caffeinate_bin" "${caffeinate_args[@]}"
 fi

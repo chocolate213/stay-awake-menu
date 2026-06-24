@@ -2,7 +2,7 @@ APP_NAME := Stay Awake
 APP_PATH := dist/$(APP_NAME).app
 INSTALL_PATH := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: build install run clean verify release
+.PHONY: build install run clean test verify release
 
 build:
 	./build-menu-app.sh
@@ -13,7 +13,13 @@ install: build
 run: install
 	open "$(INSTALL_PATH)"
 
+test:
+	bash tests/stay-awake-helper-tests.sh
+	bash tests/menu-source-tests.sh
+
 verify: build
+	bash tests/stay-awake-helper-tests.sh
+	bash tests/menu-source-tests.sh
 	plutil -lint "$(APP_PATH)/Contents/Info.plist"
 	codesign --verify --deep --strict --verbose=2 "$(APP_PATH)"
 

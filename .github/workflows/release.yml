@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish, such as v1.0.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
+
+      - name: Validate manual tag input
+        if: github.event_name == 'workflow_dispatch'
+        run: git rev-parse --verify "refs/tags/${{ inputs.tag }}"
+
+      - name: Verify app bundle
+        run: make verify
+
+      - name: Package release archive
+        run: make release
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+        run: |
+          test -n "$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" release/*.zip release/*.sha256 \
+            --title "Stay Awake ${RELEASE_TAG}" \
+            --generate-notes \
+            --verify-tag

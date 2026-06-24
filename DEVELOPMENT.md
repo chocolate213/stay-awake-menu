@@ -47,6 +47,8 @@ The prepared iconset includes a 1024 by 1024 representation to match Apple's cur
 
 The app includes `StayAwakeMenu/Resources/Scripts/stay-awake` inside the bundle. At runtime it copies that helper into the current user's Application Support directory, then launches the installed copy.
 
+When the menu app starts the helper, it passes the app process ID through `--watch-pid`. The helper forwards that to `caffeinate -w`, so the wake lock is released even if the menu app exits before `applicationWillTerminate:` can stop it.
+
 After a toggle, the app updates the menu bar presentation from the intended action immediately, then verifies the actual `caffeinate` process shortly after. This avoids a startup race where the helper PID exists before the shell script has finished `exec`-ing into `caffeinate`.
 
 If the machine restarts while a wake lock is active, the previous PID file is stale. The app compares the PID file modification date with the current boot time and clears stale state before presenting status or starting a new wake lock.

@@ -109,6 +109,7 @@ static NSString *LocalizedString(NSString *key) {
     }
 
     NSMenu *menu = [[NSMenu alloc] initWithTitle:LocalizedString(@"app.name")];
+    menu.autoenablesItems = NO;
     menu.delegate = self;
 
     self.statusMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
@@ -116,13 +117,14 @@ static NSString *LocalizedString(NSString *key) {
 
     self.toggleMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(toggleStayAwake:) keyEquivalent:@""];
     self.toggleMenuItem.target = self;
+    self.toggleMenuItem.image = nil;
 
     self.openScriptMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(openScriptLocation:) keyEquivalent:@""];
     self.openScriptMenuItem.target = self;
     self.openScriptMenuItem.image = nil;
     self.openScriptMenuItem.state = NSControlStateValueOff;
 
-    self.aboutMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(showAbout:) keyEquivalent:@""];
+    self.aboutMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:@selector(presentStayAwakeAboutPanel:) keyEquivalent:@""];
     self.aboutMenuItem.target = self;
     self.aboutMenuItem.image = nil;
     self.aboutMenuItem.state = NSControlStateValueOff;
@@ -139,9 +141,10 @@ static NSString *LocalizedString(NSString *key) {
     [menu addItem:self.aboutMenuItem];
     [menu addItem:NSMenuItem.separatorItem];
     [menu addItem:self.quitMenuItem];
-    self.statusItem.menu = menu;
 
     [self updateLocalizedMenuText];
+    [self applyStatusPresentationForRunning:[self stayAwakeIsRunningOrStarting]];
+    self.statusItem.menu = menu;
 }
 
 - (NSImage *)statusBarImageForRunning:(BOOL)isRunning {
@@ -159,7 +162,7 @@ static NSString *LocalizedString(NSString *key) {
     return fallback;
 }
 
-- (void)menuWillOpen:(NSMenu *)menu {
+- (void)menuNeedsUpdate:(NSMenu *)menu {
     [self refreshStatus];
 }
 
@@ -184,6 +187,7 @@ static NSString *LocalizedString(NSString *key) {
     self.statusMenuItem.title = isRunning ? LocalizedString(@"menu.status.on") : LocalizedString(@"menu.status.off");
     self.statusMenuItem.state = NSControlStateValueOff;
     self.toggleMenuItem.title = isRunning ? LocalizedString(@"menu.toggle.off") : LocalizedString(@"menu.toggle.on");
+    self.toggleMenuItem.image = nil;
     self.toggleMenuItem.state = isRunning ? NSControlStateValueOn : NSControlStateValueOff;
 
     NSStatusBarButton *button = self.statusItem.button;
@@ -244,7 +248,7 @@ static NSString *LocalizedString(NSString *key) {
     [NSWorkspace.sharedWorkspace activateFileViewerSelectingURLs:@[[self installedHelperURL]]];
 }
 
-- (void)showAbout:(id)sender {
+- (void)presentStayAwakeAboutPanel:(id)sender {
     NSString *credits = LocalizedString(@"about.credits");
     NSString *applicationVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0.0";
     NSImage *icon = [self applicationIcon] ?: NSApp.applicationIconImage;
@@ -285,7 +289,8 @@ static NSString *LocalizedString(NSString *key) {
 
     NSTask *task = [[NSTask alloc] init];
     task.executableURL = helperURL;
-    task.arguments = @[@"-q"];
+    NSString *watchPid = [NSString stringWithFormat:@"%d", NSProcessInfo.processInfo.processIdentifier];
+    task.arguments = @[@"-q", @"--watch-pid", watchPid];
     task.currentDirectoryURL = [helperURL URLByDeletingLastPathComponent];
     task.standardOutput = logHandle;
     task.standardError = logHandle;
